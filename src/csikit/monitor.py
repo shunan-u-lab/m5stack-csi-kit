@@ -9,12 +9,15 @@
 
 記録はしない（記録は csikit record）。組んだ送信機（``WHO`` の ``tx_mac``）の行だけを使う。
 
-失敗時の挙動: ポートを開けない・``WHO`` に答えない・組が未設定なら MonitorError（理由と直し方）。
+失敗時の挙動: 窓を出せない（画面の無い描画先。:mod:`csikit.display`）・ポートを開けない・
+``WHO`` に答えない・組が未設定なら MonitorError（理由と直し方）。
 表示の途中で行が壊れていたら（CRC 不一致）数えて捨てる。受信が止まれば題名に「受信なし」と出す。
 """
 
 from __future__ import annotations
 
+import os
+import platform
 import queue
 import re
 import threading
@@ -27,7 +30,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from csikit import io, ports
+from csikit import display, io, ports
 
 WINDOW_SEC = 10.0  # ヒートマップに出す長さ [sec]
 RATE_WINDOW_SEC = 1.0  # 受信レート・欠けを数える長さ [sec]
@@ -167,6 +170,28 @@ def drain(q: queue.Queue[tuple[str, float]], state: MonitorState) -> int:
         n += 1
 
 
+def check_window(backend: str | None = None, system: str | None = None,
+                 getenv: Callable[[str], str | None] = os.environ.get,
+                 tkinter_ok: bool | None = None) -> None:
+    """窓を出せるかを、受信機を開く前に確かめる（画面の無い描画先では plt.show() が黙って返る）.
+
+    Args:
+        backend: 描画先（None なら matplotlib に選ばせる）。
+        system: OS の名前（None なら platform.system()）。
+        getenv: 環境変数を読む関数。
+        tkinter_ok: tkinter があるか（None なら調べる）。
+
+    Raises:
+        MonitorError: 窓を出せない（理由と直し方）。
+    """
+    backend = display.plot_backend() if backend is None else backend
+    hint = display.no_window_hint(
+        backend, platform.system() if system is None else system, getenv,
+        display.has_tkinter() if tkinter_ok is None else tkinter_ok)
+    if hint is not None:
+        raise MonitorError(f"モニタの窓を出せません（描画先 {backend}）。{hint}")
+
+
 def open_receiver(port: str, opener: ports.Opener = ports.open_no_reset
                   ) -> tuple[ports.SerialPort, ports.Board]:
     """受信機をリセットせずに開き、WHO で確かめる.
@@ -233,12 +258,17 @@ def build_view(state: MonitorState, title: str = "csikit monitor"
 
 def run(port: str, duration_sec: float | None = None,
         save_figure: str | None = None) -> int:  # pragma: no cover  画面を出すので手で確かめる
-    """モニタを出す（閉じるか duration_sec が過ぎるまで）."""
+    """モニタを出す（閉じるか duration_sec が過ぎるまで）.
+
+    Raises:
+        MonitorError: 窓を出せない（:func:`check_window`）・受信機を開けない。
+    """
     import matplotlib.pyplot as plt
     from matplotlib.animation import FuncAnimation
 
     from csikit import plotting
 
+    check_window()
     plotting.use_japanese_font()
     s, board = open_receiver(port)
     state = MonitorState(tx_mac=io.colon_mac(board.peer_mac))

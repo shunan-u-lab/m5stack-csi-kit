@@ -51,7 +51,7 @@ sudo apt install -y git curl fonts-ipaexfont-gothic python3-tk
 - `fonts-ipaexfont-gothic` は日本語の文字の形（フォント）です。入れないと、モニタの画面の日本語が □ になります
 - `python3-tk` は、Python が窓（ウィンドウ）を出すための部品です。Debian の Python は、この部品を別のパッケージに分けています。
   入れないと、`csikit monitor` の窓が開きません（図を描く matplotlib が、画面を出せない形 `Agg` で動きます）。
-  uv ではなく `apt` で入れるものです
+  uv ではなく `apt` で入れるものです。入れ忘れは、手順 7 の `doctor` の「モニタの窓」の行が `[NG]` になって分かります
 
 ### 4. uv を入れ、キットを持ってくる
 

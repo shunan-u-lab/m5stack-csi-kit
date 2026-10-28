@@ -120,6 +120,7 @@ uv run csikit doctor
 [OK] Python: 3.14
 [OK] esptool: /home/you/.local/bin/esptool
 [--] PlatformIO: 無し（ファームを自分でビルドする人だけ要る: …）
+[OK] モニタの窓: 描画先 tkagg
 [OK] .bin（tx）: …/m5stack-csi-kit/out/firmware/csi-tx-m5stack-basic.bin
 [OK] .bin（rx）: …/m5stack-csi-kit/out/firmware/csi-rx-m5stack-basic.bin
 [--] USB のポート: /dev/ttyACM0（CH9102・USB Single Serial）
