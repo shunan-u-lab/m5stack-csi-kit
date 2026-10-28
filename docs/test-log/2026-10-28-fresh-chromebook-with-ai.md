@@ -20,14 +20,20 @@
 | `monitor`（窓が出るか） | 窓が出る | 正常 | — | 利用者の報告 |
 | `record` | 記録できる | 正常 | — | 利用者の報告 |
 | `scripts/live_csi.py`（多機能のビューア） | 起動する | 起動した | — | 利用者の報告 |
+| 警告 | 出ない | フォントの太字が無い警告が出た（動作には影響なし） | 警告 1 種 | 利用者の報告 |
 
 **`python3-tk` が要った理由:** uv が Linux 開発環境の Debian の Python 3.13（`/usr/bin/python3.13`）を使った。
 Debian は Python の tkinter を別のパッケージ `python3-tk` に分けているため、matplotlib が窓を出す部品を見つけられず、`agg` を選んだ。
 作者の Chromebook には `python3-tk` が入っていたため、これまでの試験では表に出なかった。
+
+**太字の警告:** 作者の Chromebook でも `findfont: Failed to find font weight bold for IPAGothic, now using 400.` として再現した。
+`scripts/live_csi.py` がチャンネルの切り替えの印を太字（`fontweight="bold"`）で描き、日本語のために候補に足した IPA ゴシックに太字が無いため。
+描く文字が英数字（` ch6`）だけでも出る。印が普通の太さで描かれるだけで、表示・記録には影響しない。
 
 ## 次にどうするか
 
 - 手順を直した（PR #4）: 付録の手順 3 の apt の行・README（日・英）・7 章に `python3-tk` を足した
 - 検知できるようにした（PR #4）: `doctor` に「モニタの窓」の行を足した。`monitor` も、窓を出せないときは理由を言って止まる
 - `python3-tk` を入れた後は、`doctor`・`monitor`・`record`・`live_csi.py` まで一式が動いた。手順の直しはこれで足りている
+- 太字の警告は、直すかどうかを決める（太字をやめる・警告を抑える）
 - Intel・AMD の Chromebook は、まだ未確認のまま
