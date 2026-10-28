@@ -1,12 +1,13 @@
 # テスト・Lint・型チェックとファームのビルド。
-# 自動で動くのは v* のタグ（3 OS）だけ。それ以外は手動（Actions の画面の Run workflow か
-# `gh workflow run ci.yml --ref <ブランチ> -f os=linux`）。os は linux（約 5 分）か all（3 OS・約 45 分）
-# （private リポの Actions は無料枠が月 2,000 分で、Windows・Mac は多く数えられるため。2026-10-28。公開後は自動に戻すか決める）。
+# PR と v* のタグで自動で動く（3 OS）。手動（Actions の画面の Run workflow か
+# `gh workflow run ci.yml --ref <ブランチ> -f os=linux`）でも動かせる。os は linux（約 5 分）か all（3 OS・約 10 分）
+# （public のリポでは標準の runner が無料なので、2026-10-28 に PR ごとの自動に戻した）。
 # v* のタグでは、書き込み用の .bin を付けた下書きのリリースを作る（公開は人が確かめてから）。
 # コマンドは AGENTS.md の Commands と揃える。
 name: CI
 
 on:
+  pull_request:
   push:
     tags: ["v*"]
   workflow_dispatch:
@@ -31,8 +32,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # タグと手動の all は 3 OS、手動の linux は Linux だけ
-        os: ${{ fromJSON((startsWith(github.ref, 'refs/tags/v') || inputs.os == 'all') && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+        # 手動の linux は Linux だけ、それ以外（PR・タグ・手動の all）は 3 OS
+        os: ${{ fromJSON(inputs.os == 'linux' && '["ubuntu-latest"]' || '["ubuntu-latest", "windows-latest", "macos-latest"]') }}
         python-version: ["3.13"]
         include:
           # 3.10 は対応の下限（tomli を使う側）
@@ -79,8 +80,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # タグと手動の all は 3 OS、手動の linux は Linux だけ
-        os: ${{ fromJSON((startsWith(github.ref, 'refs/tags/v') || inputs.os == 'all') && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+        # 手動の linux は Linux だけ、それ以外（PR・タグ・手動の all）は 3 OS
+        os: ${{ fromJSON(inputs.os == 'linux' && '["ubuntu-latest"]' || '["ubuntu-latest", "windows-latest", "macos-latest"]') }}
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
