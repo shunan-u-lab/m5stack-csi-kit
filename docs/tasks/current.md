@@ -11,9 +11,10 @@
 ## 次の一手
 
 - [x] CI を手動（`os=linux`）で動かして通した（2026-10-28）
-- [ ] タグ `v0.1.0-rc.1` で CI（3 OS）を通し、下書きのリリース（.bin 2 つ・`SHA256SUMS`）ができるのを確かめる
-- [ ] ゼロからクローンして、実機で doctor → flash → monitor → record（チュートリアルの付録どおり。
-      AI と一緒に進めて迷わないかも見る。ADR 0008）
+- [x] タグ `v0.1.0-rc.1` で CI（3 OS・約 9 分）が通り、下書きのリリース（.bin 2 つ・`SHA256SUMS`）ができた（2026-10-28。照合も OK）
+- [x] ゼロからクローンして、Linux の実機で doctor → flash → monitor → record が通った（2026-10-28。
+      [記録](../test-log/2026-10-28-fresh-clone-doctor-flash-monitor-record.md)）
+- [ ] 作者の設定の無い環境で、AI と一緒に進めて迷わないかを確かめる（ADR 0008 の 4 段目。上の回は作者の環境の AI で行った）
 - [ ] public に切り替え、リリースを公開する。直後に認証なしの `git clone` で付録の手順をもう一度
 - [ ] public にしたら `main` を保護する（消す・強制 push の禁止、PR を必須、CI の成功を必須）。PR ごとの自動 CI に戻すか決める
 - [ ] public からクローンして、Windows の実機で doctor → flash → monitor → record（`docs/test-log/` に記録）
