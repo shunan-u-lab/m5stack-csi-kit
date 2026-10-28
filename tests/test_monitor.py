@@ -135,3 +135,10 @@ def test_heatmap_and_rssi_share_the_time_axis() -> None:
     redraw(now)
     ax_map, ax_rssi = fig.axes[0], fig.axes[1]  # 3 つ目は色の目盛り
     assert ax_map.get_xlim() == ax_rssi.get_xlim() == (-monitor.WINDOW_SEC, 0)
+
+
+def test_check_window_stops_before_opening_the_port() -> None:
+    """画面の無い描画先なら、受信機を開く前に理由と直し方を言って止まる."""
+    with pytest.raises(monitor.MonitorError, match="python3-tk"):
+        monitor.check_window("agg", "Linux", {"DISPLAY": ":0"}.get, tkinter_ok=False)
+    monitor.check_window("tkagg", "Linux", {"DISPLAY": ":0"}.get, tkinter_ok=True)

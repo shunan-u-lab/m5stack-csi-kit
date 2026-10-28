@@ -2,7 +2,8 @@
 
 見るもの（上から順。前の段が駄目でも、分かる範囲で最後まで見る）:
 
-1. 道具: esptool（書き込み）。PlatformIO はファームを自分でビルドする人だけ（無くても NG にしない）
+1. 道具: esptool（書き込み）。PlatformIO はファームを自分でビルドする人だけ
+   （無くても NG にしない）。モニタの窓を出せるか（matplotlib の描画先。:mod:`csikit.display`）
 2. ファーム: 書き込み用の .bin（``out/firmware/``）
 3. USB のポート: M5Stack Basic の USB 変換チップ（CH9102・CP2104）が見えるか。
    Linux では読み書きの権限
@@ -24,7 +25,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from csikit import flash, ports
+from csikit import display, flash, ports
 
 MIN_PYTHON = (3, 10)
 # Debian・Ubuntu で USB のシリアルを使える集団（Fedora・Arch は uucp）
@@ -65,6 +66,9 @@ class Env:
     can_rw: Callable[[str], bool] = lambda dev: os.access(dev, os.R_OK | os.W_OK)
     dist_dir: Path = flash.DIST_DIR
     python: tuple[int, int] = (sys.version_info.major, sys.version_info.minor)
+    plot_backend: Callable[[], str] = display.plot_backend
+    has_tkinter: Callable[[], bool] = display.has_tkinter
+    getenv: Callable[[str], str | None] = os.environ.get
 
 
 def mac_text(mac: str) -> str:
@@ -89,7 +93,17 @@ def check_tools(env: Env) -> list[Check]:
     pio = env.which("pio")
     out.append(Check(Level.INFO, "PlatformIO", pio or "無し（ファームを自分でビルドする人だけ要る:"
                                                       " uv tool install platformio）"))
+    out.append(check_display(env))
     return out
+
+
+def check_display(env: Env) -> Check:
+    """モニタの窓を出せるか（matplotlib が画面を出せる描画先を選ぶか）."""
+    backend = env.plot_backend()
+    hint = display.no_window_hint(backend, env.system(), env.getenv, env.has_tkinter())
+    if hint is None:
+        return Check(Level.OK, "モニタの窓", f"描画先 {backend}")
+    return Check(Level.NG, "モニタの窓", f"出せない（描画先 {backend}）", hint)
 
 
 def check_images(env: Env) -> list[Check]:

@@ -40,7 +40,9 @@ def make_env(tmp_path: Path, devices: dict[str, FakeDevice | None], *, images: b
     infos = [ports.PortInfo(p, "USB Single Serial", *vidpid) for p in devices]
     return doctor.Env(which=lambda name: f"/usr/bin/{name}" if name in tools else None,
                       system=lambda: system, list_ports=lambda: infos, identify=identify,
-                      can_rw=lambda dev: rw, dist_dir=tmp_path)
+                      can_rw=lambda dev: rw, dist_dir=tmp_path,
+                      plot_backend=lambda: "tkagg", has_tkinter=lambda: True,
+                      getenv=lambda name: None)
 
 
 def paired_devices() -> dict[str, FakeDevice | None]:
@@ -144,3 +146,27 @@ def test_unopenable_port(tmp_path: Path) -> None:
 
     checks = doctor.run(replace(env, identify=busy))
     assert any("他のアプリ" in c.hint for c in ng(checks))
+
+
+@pytest.mark.parametrize(("backend", "tk", "env_vars", "word"), [
+    ("agg", False, {"DISPLAY": ":0"}, "sudo apt install python3-tk"),
+    ("agg", True, {}, "画面の無い環境"),
+    ("agg", True, {"DISPLAY": ":0", "MPLBACKEND": "Agg"}, "unset MPLBACKEND"),
+])
+def test_monitor_window_problems(tmp_path: Path, backend: str, tk: bool,
+                                 env_vars: dict[str, str], word: str) -> None:
+    """窓を出せない描画先なら NG にし、原因ごとの直し方を出す."""
+    env = replace(make_env(tmp_path, paired_devices()), plot_backend=lambda: backend,
+                  has_tkinter=lambda: tk, getenv=env_vars.get)
+    checks = doctor.run(env)
+    names = {c.name: c for c in ng(checks)}
+    assert word in names["モニタの窓"].hint
+    assert "1 件の問題" in doctor.report(checks)
+
+
+def test_monitor_window_ok(tmp_path: Path) -> None:
+    """窓を出せる描画先なら OK で、その名前を出す."""
+    checks = doctor.run(make_env(tmp_path, paired_devices()))
+    window = next(c for c in checks if c.name == "モニタの窓")
+    assert window.level is doctor.Level.OK
+    assert "tkagg" in window.detail

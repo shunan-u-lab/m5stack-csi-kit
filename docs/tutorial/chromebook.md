@@ -43,12 +43,15 @@ Chromebook は、ブラウザとアプリを使うためのパソコンで、そ
 
 ```sh
 sudo apt update
-sudo apt install -y git curl fonts-ipaexfont-gothic
+sudo apt install -y git curl fonts-ipaexfont-gothic python3-tk
 ```
 
 - `sudo` は「管理者として実行する」という意味です。Linux 開発環境では、パスワードは聞かれません
 - `git` はキットを手元に持ってくる道具、`curl` はインターネットからファイルを取ってくる道具です
 - `fonts-ipaexfont-gothic` は日本語の文字の形（フォント）です。入れないと、モニタの画面の日本語が □ になります
+- `python3-tk` は、Python が窓（ウィンドウ）を出すための部品です。Debian の Python は、この部品を別のパッケージに分けています。
+  入れないと、`csikit monitor` の窓が開きません（図を描く matplotlib が、画面を出せない形 `Agg` で動きます）。
+  uv ではなく `apt` で入れるものです。入れ忘れは、手順 7 の `doctor` の「モニタの窓」の行が `[NG]` になって分かります
 
 ### 4. uv を入れ、キットを持ってくる
 
@@ -111,7 +114,7 @@ uv run csikit doctor
 | **USB を抜き差ししたら、渡し直しが要ることがある** **[起きた]** | 抜くと Linux 側から消えます。差し直したら、手順 5 の 2・3 で Linux に接続し直します。`doctor` の「USB のポートが見つからない」は、まずこれを疑います |
 | 書き込み（`esptool`）の速さ **[起きた]** | Linux 開発環境では、921600 bps の読み出しで取りこぼしが多かったため、吸い出し（`scripts/backup_flash.py`）は 460800 bps にしてあります。`csikit flash` の書き込みも 460800 bps で通りました |
 | ファイルを Chrome OS 側で見る | Linux の中のファイルは、Chrome OS の「ファイル」アプリの「Linux ファイル」に出ます。モニタの図（`--save-figure`）や記録は、そこから見られます |
-| モニタの画面 | `uv run csikit monitor` のウィンドウは、Chrome OS の他のアプリと同じように開きます（確かめた環境で表示できました） |
+| モニタの画面 **[起きた]** | `uv run csikit monitor` のウィンドウは、Chrome OS の他のアプリと同じように開きます（確かめた環境で表示できました）。まっさらな Chromebook では、手順 3 の `python3-tk` が無いと窓が開きませんでした（2026-10-28）。後から入れたときは、入れた後に `monitor` を動かし直します |
 | ファームウェアを自分でビルドする | 確かめた環境（ARM）で `pio run` が通りました。PlatformIO は `uv tool install platformio` で入ります。初回は道具の取得に時間と約 3 GB の容量がかかります |
 | Linux の中身を消すと | 設定から Linux 開発環境をオフにすると、Linux の中のファイル（キット・記録を含む）は**全部消えます**。記録は先に Chrome OS 側か別の場所に写してください |
 
