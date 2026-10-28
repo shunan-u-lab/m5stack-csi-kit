@@ -1,0 +1,27 @@
+M5Stack CSI Kit — license overview / ライセンスの概要
+
+This repository uses two licenses (dual licensing):
+
+  Code  (src/, tests/, scripts/, firmware/ except README files, examples/)
+        -> MIT License                       see LICENSE-CODE
+  Documents (Markdown files)
+        -> Creative Commons Attribution 4.0 International (CC BY 4.0)
+                                             see LICENSE-DOCS
+
+You may use, copy and adapt both, also in research, theses and teaching,
+as long as you keep the copyright notice (code) or give credit (documents).
+
+Copyright (c) 2026 Nobufumi Yoshida, Professional Graduate School of Information Science, Shunan University
+
+----------------------------------------------------------------------
+日本語の要約
+
+このリポジトリは 2 つのライセンスを使っています。
+
+  プログラム（src/・tests/・scripts/・firmware/ の README 以外・examples/）
+        -> MIT ライセンス（LICENSE-CODE）
+  文書（Markdown のファイル）
+        -> CC BY 4.0（LICENSE-DOCS）
+
+研究・論文・授業でも自由に使い、コピーし、書きかえられます。
+プログラムは著作権表示を残すこと、文書は出典（このリポジトリ）を示すことが条件です。

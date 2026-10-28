@@ -1,0 +1,84 @@
+# 記録ごとのメタデータの雛形（書式: docs/decisions/0003-recording-metadata-format.md）
+# 使い方: data/meta/<記録名>.toml に写して埋める（`csikit record` は下書きを自動で作る）。分からない値は "unknown" と書く（省かない）
+# 実名・住所は書かない（被験者は P1、部屋は room-A のような呼び名）
+
+schema = 1
+recording = "YYYYmmdd-HHMMSS-label"  # CSV のファイル名から .csv を除いたもの
+experiment = "test"                  # 実験の呼び名（例: exp01）
+label = "label"
+purpose = "この記録で何を確かめるか"
+
+[time]
+start = "2026-01-01T00:00:00+09:00"
+duration_sec = 30
+
+[[devices]]
+role = "tx"
+name = "T1"
+board = "M5Stack Basic"
+mac = "02:00:00:00:00:01"   # 自分の M5Stack Basic の MAC（csikit doctor が表示する）
+firmware = "csi-tx"
+firmware_rev = "unknown"   # 書き込んだ時点の git 短縮ハッシュ
+
+[[devices]]
+role = "rx"
+name = "R1"
+board = "M5Stack Basic"
+mac = "02:00:00:00:00:02"
+firmware = "csi-rx"
+firmware_rev = "unknown"
+
+[radio]
+channel = 11
+bandwidth = "HT20"
+mcs = 0
+tx_rate_hz = 100
+
+[placement]
+room = "room-A"
+tx_rx_distance_m = 3.0
+line_of_sight = true
+photos = []                # data/raw/ 配下のファイル名（例: "YYYYmmdd-HHMMSS-label-1.jpg"）
+
+[[placement.nodes]]
+name = "T1"
+height_m = "unknown"
+antenna = "unknown"        # 例: アンテナ端を上、本体の面を R1 に向ける
+surroundings = "unknown"   # 例: 机の端、30 cm 以内に金属なし
+
+[[placement.nodes]]
+name = "R1"
+height_m = "unknown"
+antenna = "unknown"
+surroundings = "unknown"   # 例: PC の横（USB 接続）
+
+[environment]
+people_in_room = 1
+other_activity = "なし"
+
+[[subjects]]
+id = "P1"
+role = "被験者 兼 記録者"
+
+# 予定した区間（実際の切り替え時刻は CSV の "# mark" 行が正）
+[[segments]]
+start_sec = 0
+end_sec = 30
+activity = "static"
+where = "PC の席（T1–R1 線から外れた位置）"
+
+# 予定外の出来事（なければ項目ごと消してよい）
+# [[events]]
+# t_sec = 0
+# note = ""
+# confirmed = false
+
+[quality]                  # 記録ツールの集計から写す
+rate_hz = "unknown"
+missing_seq = "unknown"
+bad_crc = "unknown"
+rssi_mean_dbm = "unknown"
+
+[status]
+usable = true
+issues = []

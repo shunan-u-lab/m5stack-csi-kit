@@ -1,0 +1,129 @@
+# テスト・Lint・型チェックとファームのビルド。
+# 自動で動くのは v* のタグ（3 OS）だけ。それ以外は手動（Actions の画面の Run workflow か
+# `gh workflow run ci.yml --ref <ブランチ> -f os=linux`）。os は linux（約 5 分）か all（3 OS・約 45 分）
+# （private リポの Actions は無料枠が月 2,000 分で、Windows・Mac は多く数えられるため。2026-10-28。公開後は自動に戻すか決める）。
+# v* のタグでは、書き込み用の .bin を付けた下書きのリリースを作る（公開は人が確かめてから）。
+# コマンドは AGENTS.md の Commands と揃える。
+name: CI
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      os:
+        description: "linux（約 5 分）か all（Linux・Windows・Mac。約 45 分）"
+        type: choice
+        options: [linux, all]
+        default: linux
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # タグと手動の all は 3 OS、手動の linux は Linux だけ
+        os: ${{ fromJSON((startsWith(github.ref, 'refs/tags/v') || inputs.os == 'all') && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+        python-version: ["3.13"]
+        include:
+          # 3.10 は対応の下限（tomli を使う側）
+          - os: ubuntu-latest
+            python-version: "3.10"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: 依存関係の同期（uv.lock と食い違えば失敗）
+        run: uv sync --locked
+      - name: テスト
+        run: uv run pytest -q
+      - name: Lint
+        run: uv run ruff check .
+      - name: 型チェック
+        run: uv run mypy src
+
+  # 文字コードを指定しない読み書き（Windows の既定 cp1252・cp932 で日本語が壊れる）を自分のコードに入れない。
+  # 外のライブラリ（site-packages）の警告は数えない
+  encoding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - run: uv sync --locked
+      - name: 文字コードの指定漏れが無いこと
+        run: |
+          out=$(uv run python -X warn_default_encoding -m pytest -q -W always::EncodingWarning 2>&1)
+          echo "$out" | tail -3
+          if echo "$out" | grep -E "/(src|scripts|tests)/[^ ]*\.py:[0-9]+: EncodingWarning"; then
+            echo "encoding=\"utf-8\" を指定してください" >&2
+            exit 1
+          fi
+
+  firmware:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    # Mac（Apple Silicon の runner）でもビルドできる（2026-10-27 の CI で確認）
+    strategy:
+      fail-fast: false
+      matrix:
+        # タグと手動の all は 3 OS、手動の linux は Linux だけ
+        os: ${{ fromJSON((startsWith(github.ref, 'refs/tags/v') || inputs.os == 'all') && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - name: PlatformIO・esptool（docs/dependencies.md の版）
+        run: |
+          uv tool install platformio==6.2.0
+          uv tool install esptool==5.3.1
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('firmware/*/platformio.ini') }}
+      - name: 送信機のビルド
+        run: pio run -d firmware/csi-tx
+      - name: 受信機のビルド
+        run: pio run -d firmware/csi-rx
+      - name: 書き込み用の .bin
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          uv sync --locked
+          uv run python scripts/make_dist.py
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: firmware
+          path: out/firmware/
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [python, encoding, firmware]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware
+          path: out/firmware
+      - name: 下書きのリリースを作る
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" out/firmware/* --draft --generate-notes --title "$GITHUB_REF_NAME"

@@ -1,0 +1,21 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 Nobufumi Yoshida, Professional Graduate School of Information Science, Shunan University
+
+Scope: the documents in this repository -- every Markdown file (README*, DISCLAIMER*,
+docs/, firmware/*/README.md, reference/).
+The source code (src/, tests/, scripts/, firmware/ except its README files, and the
+metadata templates in examples/) is licensed under the MIT License in the LICENSE-CODE file.
+
+You are free to share (copy and redistribute in any medium or format) and adapt
+(remix, transform, and build upon) this material for any purpose, even
+commercially, as long as you give appropriate credit, provide a link to the
+license, and indicate if changes were made.
+
+Full license text: https://creativecommons.org/licenses/by/4.0/legalcode
+
+---
+日本語の要約: 文書（Markdown のファイル）は CC BY 4.0 です。
+出典（このリポジトリ）を示せば、論文・発表資料・授業などで自由にコピー・改変できます。
+プログラム（src/・tests/・scripts/・firmware/ の README 以外・examples/ のメタデータの雛形）は
+MIT ライセンスです（LICENSE-CODE を参照）。

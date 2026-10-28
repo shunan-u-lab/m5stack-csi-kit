@@ -1,0 +1,74 @@
+# 記入例（架空の記録。MAC はダミー）。書式: docs/decisions/0003-recording-metadata-format.md
+schema = 1
+recording = "20260101-120100-wave"
+experiment = "example"
+label = "wave"
+purpose = "T1–R1 線の中ほどで手を振ったときの振幅の変化を見る"
+
+[time]
+start = "2026-01-01T12:00:00+09:00"
+duration_sec = 30
+
+[[devices]]
+role = "tx"
+name = "T1"
+board = "M5Stack Basic"
+mac = "02:00:00:00:00:01"
+firmware = "csi-tx"
+firmware_rev = "unknown"
+
+[[devices]]
+role = "rx"
+name = "R1"
+board = "M5Stack Basic"
+mac = "02:00:00:00:00:02"
+firmware = "csi-rx"
+firmware_rev = "unknown"
+
+[radio]
+channel = 11
+bandwidth = "HT20"
+mcs = 0
+tx_rate_hz = 100
+
+[placement]
+room = "room-A"
+tx_rx_distance_m = 3.0
+line_of_sight = true
+photos = []
+
+[[placement.nodes]]
+name = "T1"
+height_m = 0.7
+antenna = "unknown"
+surroundings = "机の上"
+
+[[placement.nodes]]
+name = "R1"
+height_m = 0.7
+antenna = "unknown"
+surroundings = "PC の横（USB 接続）"
+
+[environment]
+people_in_room = 1
+other_activity = "なし"
+
+[[subjects]]
+id = "P1"
+role = "記録者"
+
+[[segments]]
+start_sec = 0
+end_sec = 30
+activity = "wave"
+where = "T1–R1 線の中ほど"
+
+[quality]
+rate_hz = 99.8
+missing_seq = 0
+bad_crc = 0
+rssi_mean_dbm = -50.0
+
+[status]
+usable = true
+issues = []

@@ -1,0 +1,70 @@
+# メタデータの元の記入例（sweep_channels.py --meta-base に渡す）。記録の前に TODO を埋める
+# ここの devices・radio・placement・environment・subjects が、掃引の全記録に写る
+# 書式: docs/decisions/0003-recording-metadata-format.md
+schema = 1
+recording = "example-meta-base"
+experiment = "example"
+label = "meta-base"
+purpose = "--meta-base 用の元（記録ではない）"
+
+[time]
+start = "unknown"
+duration_sec = "unknown"
+
+[radio]
+channel = 11  # 記録ごとに掃引のチャンネルで上書きされる
+bandwidth = "HT20"
+mcs = 0
+tx_rate_hz = 100
+
+[placement]
+room = "room-A"
+tx_rx_distance_m = 3.0
+line_of_sight = true
+photos = []                  # data/raw 配下の写真のファイル名
+
+[[placement.nodes]]
+name = "T1"
+height_m = "unknown"
+antenna = "unknown"
+surroundings = "unknown（S は USB の電源だけ）"
+
+[[placement.nodes]]
+name = "R1"
+height_m = "unknown"
+antenna = "unknown"
+surroundings = "unknown（PC に USB 接続）"
+
+[environment]
+people_in_room = 1
+other_activity = "あり（内容は未確認）"
+
+[[subjects]]
+id = "P1"
+role = "記録者（部屋に残り、決めた位置に座って動かない。位置は segments.where に書く）"
+
+[status]
+usable = "unknown"  # 元なので使わない（記録ごとの status は掃引の後に埋める）
+issues = []
+
+[[devices]]
+role = "tx"
+name = "T1"
+board = "M5Stack Basic"
+mac = "02:00:00:00:00:01"
+firmware = "csi-tx"
+firmware_rev = "unknown"
+
+[[devices]]
+role = "rx"
+name = "R1"
+board = "M5Stack Basic"
+mac = "02:00:00:00:00:02"
+firmware = "csi-rx"
+firmware_rev = "unknown"
+
+[[segments]]
+start_sec = 0.0
+end_sec = 5.0
+activity = "static"
+where = "unknown（記録者が座った位置は記録なし）"

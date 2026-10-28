@@ -1,0 +1,42 @@
+# このリポジトリは公開される。記録・吸い出し・個人に結びつくもの（実名・連絡先・設置場所）は追跡しない。
+
+# 個人に結びつきうる入力データ・生素材
+raw/
+private/
+
+# 再生成できるもの・大容量（バックアップ対象にもしない）
+*.mp4
+*.mov
+*.wav
+*.m4a
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Node
+node_modules/
+
+# エディタ・OS
+.vscode/
+.idea/
+.DS_Store
+
+# Claude Code のローカル設定・個人の指示（コミットしない）
+.claude/settings.local.json
+CLAUDE.local.md
+
+# 生成物（ビルド結果・配布用の .bin。scripts/make_dist.py で作り直せる）
+out/
+# PlatformIO
+.pio/
+
+# 利用者が取った記録・ファームの吸い出し（docs/requirements.md「扱うデータ」。git に入れない）
+data/
