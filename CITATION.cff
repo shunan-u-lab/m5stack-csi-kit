@@ -1,0 +1,29 @@
+# 引用の情報（GitHub のリポのページの「Cite this repository」はここから作られる）。
+# 版を上げたら version・date-released も直す（tests/test_public_docs.py が pyproject.toml の版と比べる）
+cff-version: 1.2.0
+message: >-
+  If you use this kit in a paper or presentation, please cite it as below.
+  State the release tag you used and the firmware version of both boards
+  (fw= in the output of `uv run csikit doctor`).
+type: software
+title: "M5Stack CSI Kit"
+abstract: >-
+  A kit for recording Wi-Fi channel state information (CSI) with two M5Stack Basic
+  boards and a PC: firmware for a transmitter and a receiver, and Python tools to
+  check, flash, monitor, record and load the data.
+authors:
+  - family-names: Yoshida
+    given-names: Nobufumi
+    affiliation: "Professional Graduate School of Information Science, Shunan University"
+version: "0.1.0"
+date-released: "2026-10-28"
+repository-code: "https://github.com/shunan-u-lab/m5stack-csi-kit"
+license:
+  - MIT
+  - CC-BY-4.0
+keywords:
+  - Wi-Fi sensing
+  - channel state information
+  - CSI
+  - ESP32
+  - M5Stack

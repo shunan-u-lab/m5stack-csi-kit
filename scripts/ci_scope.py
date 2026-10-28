@@ -10,7 +10,7 @@
 
 決め方:
 
-- 文書（``*.md``・``docs/`` の下・``LICENSE*``・``DISCLAIMER*``）だけなら
+- 文書（``*.md``・``docs/`` の下・``LICENSE*``・``DISCLAIMER*``・``CITATION*``）だけなら
   ``python=light``・``firmware=false``
 - ファーム・CI の設定・配布用の .bin を作るスクリプトが変われば、すべて回す
 - それ以外（Python のコード・テスト・依存・例など、知らないファイルを含む）は
@@ -28,7 +28,7 @@ from typing import Final
 
 DOC_SUFFIX: Final = ".md"
 DOC_DIRS: Final = ("docs/",)
-DOC_PREFIXES: Final = ("LICENSE", "DISCLAIMER")  # リポ直下のファイル名の先頭
+DOC_PREFIXES: Final = ("LICENSE", "DISCLAIMER", "CITATION")  # リポ直下のファイル名の先頭
 # ファームのビルドが要る変更（ファームそのもの・CI の設定・.bin を作るスクリプト）
 FIRMWARE_PATHS: Final = ("firmware/", ".github/", "scripts/make_dist.py")
 FULL: Final = {"python": "full", "firmware": "true"}

@@ -182,6 +182,22 @@ docs/decisions/      design decisions and their reasons (ADRs)
 
 Most documents other than this README are in Japanese.
 
+## How to cite
+
+If you use this kit in a paper or presentation, state the following so that readers can obtain the same measurement setup.
+
+- **Pin the version.** `main` keeps changing, so give the release tag you used (e.g. `v0.1.0`) or the commit hash.
+  "Cite this repository" on the repository page (generated from [CITATION.cff](CITATION.cff)) gives BibTeX and APA forms
+- **State the firmware version on the boards.** `fw=` in the output of `uv run csikit doctor` (both the transmitter and the receiver). It may differ from the PC-side version
+- **State the measurement conditions the kit fixes** (or the values you changed):
+  - Transmission: one transmitter, every 10 ms (about 100 packets/s), 802.11n MCS0, 20 MHz (HT20)
+  - CSI: the 56 HT-LTF subcarriers (indices −28 to +28 excluding 0), one antenna
+  - Channel and transmit power (the values set with `csikit channel` / `txpower`, if any; the default power is the ESP32 default of 19.5 dBm)
+  - The receiver outputs CSI only from its paired transmitter (other sources are only counted)
+
+Reproducing tutorial figures or text in a paper or slides requires attribution under CC BY 4.0 ([LICENSE-DOCS](LICENSE-DOCS)).
+Using the code alone does not oblige you to cite it under the license, but we recommend doing so for reproducibility.
+
 ## License
 
 - Code (`src/`, `tests/`, `scripts/`, `firmware/`, `examples/`): **MIT** — [LICENSE-CODE](LICENSE-CODE)
