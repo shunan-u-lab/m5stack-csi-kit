@@ -43,6 +43,9 @@ docs/decisions/   設計判断の記録（ADR・書き換えない）
 - **実在の連絡先・実名・人や場所に結びつく情報を書かない。** 記録・試験の記録・例にも入れない。例外は公開者本人の表示だけ（README・DISCLAIMER・LICENSE。ADR 0009）
 - **鍵・パスワード（受信機の Wi-Fi など）は書かない。** 環境変数（`CSI_WIFI_SSID`・`CSI_WIFI_PASS`）か入力で渡す
 - **既存の機器・ソフトを使ったら `docs/dependencies.md` に版を書く**
+- **キットの版を上げるとき（`pyproject.toml` の `version`）は、AI が同じ PR で `CITATION.cff` の `version` と `date-released` も書き直す。**
+  `date-released` はタグを打つ予定の日（決まっていなければ PR を作る日）。人が手で直す前提にしない。
+  版の一致は `tests/test_public_docs.py` が検査するが、日付は検査しない
 - **実機で試したら `docs/test-log/` に記録する**（設計値・実測値・差。MAC・SSID は書かない）
 
 ## 学ぶ人と作業するとき（ADR 0008）

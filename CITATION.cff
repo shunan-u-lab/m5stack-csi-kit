@@ -1,5 +1,6 @@
 # 引用の情報（GitHub のリポのページの「Cite this repository」はここから作られる）。
-# 版を上げたら version・date-released も直す（tests/test_public_docs.py が pyproject.toml の版と比べる）
+# 版を上げる PR で、AI が version・date-released を書き直す（AGENTS.md）。
+# version は tests/test_public_docs.py が pyproject.toml の版と比べる。date-released は検査しない
 cff-version: 1.2.0
 message: >-
   If you use this kit in a paper or presentation, please cite it as below.

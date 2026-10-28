@@ -34,7 +34,8 @@
 - [ ] 機材の貸与元の先生方に確認していただく
 - [ ] CI を絞った後の最初の文書だけの PR で、`changes` が `python=light`・`firmware=false` を出し、`ci-ok` が通って約 1 分で終わるかを確かめる（PR #6 の後）
 - [ ] 次のリリース（`v0.1.1`）を出すかを決める。中身: `doctor` の「モニタの窓」・`python3-tk` の手順（PR #4）、太字の警告の直し（PR #5）。
-      ファームは変わっていないので、書き込み直しは要らない。Windows・Mac の確認の後にまとめてもよい
+      ファームは変わっていないので、書き込み直しは要らない。Windows・Mac の確認の後にまとめてもよい。
+      版を上げる PR では、AI が `CITATION.cff` の `version`・`date-released` も直す（AGENTS.md・PR #7）
 
 ## 待ち
 
