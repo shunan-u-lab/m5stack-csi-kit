@@ -161,7 +161,7 @@ cap = io.load_rx("data/raw/20260101-120000-empty.csv")   # .csv.zst もそのま
 | `csikit doctor` | Linux の実機で、送信機・受信機の見分け、古いファーム・組の未設定の判定、組が揃えば「問題はありません」を確認（2026-10-28） |
 | `csikit channel / txpower / unpair` | Linux の実機 2 台で、ch6 → ch11、出力 8 dBm 指定（実際 6.25 dBm）、2 台の組の消去 → `doctor` が未設定を案内 → `flash --pair-only` で元どおりを確認（2026-10-28） |
 | 組を NVS に置く形（`PAIRSET`）・`csikit flash` | Linux の実機 2 台で、書き込み・組ませ・組み直し（`--pair-only`）・`PAIRCLEAR`、署名つきのチャンネル切替（鍵が違えば拒む）を確認（2026-10-28） |
-| Chromebook（ARM・Linux 開発環境の Debian 13） | 上の `doctor`・`flash`・`monitor`・`record` は、すべてこの環境で確認（2026-10-28）。Intel・AMD の Chromebook は未確認 |
+| Chromebook（ARM・Linux 開発環境の Debian 13） | 上の `doctor`・`flash`・`monitor`・`record` は、すべてこの環境で確認（2026-10-28）。買ったままの別の ARM の Chromebook でも、付録の手順から一式が動いた（2026-10-28）。Intel・AMD の Chromebook は未確認 |
 | Windows | 実機は**未確認**（CI のテストとファームのビルドは通過） |
 | Mac | 実機は**未確認**（CI のテストとファームのビルドは通過） |
 | パケットロス（無線の区間） | PC の両脇に 2 台を置き、各チャンネル 1 分（2026-10-28）: 全体 1.06 %、既定の ch11 は 0.32 %、チャンネルにより 0.08〜2.81 %。受信機の中の取りこぼしは 0。周りの Wi-Fi の混み具合で変わる（[記録](docs/test-log/2026-10-28-packet-loss-60s-per-channel.md)）。ch11 で送信出力を 19.5 → 0.75 dBm に下げてもロス率は 0.38〜1.11 % で増えなかった（[記録](docs/test-log/2026-10-28-tx-power-vs-loss-ch11.md)） |
