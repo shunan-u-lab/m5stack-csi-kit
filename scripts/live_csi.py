@@ -1171,9 +1171,9 @@ def draw_channel_changes(buffer: LiveBuffer, axes: list[Any], drawn: int) -> int
     for t, channel in changes:
         for ax in axes:
             ax.axvline(t, color=CHANNEL_LINE_COLOR, lw=1.2, ls="--", alpha=0.9)
+            # 太字にしない（日本語のために足した IPA ゴシックに太字が無く、findfont の警告が出る）
             ax.text(t, 0.02, f" ch{channel}", transform=ax.get_xaxis_transform(),
-                    color=CHANNEL_LINE_COLOR, fontsize=9, va="bottom", clip_on=True,
-                    fontweight="bold")
+                    color=CHANNEL_LINE_COLOR, fontsize=9, va="bottom", clip_on=True)
     return drawn + len(changes)
 
 

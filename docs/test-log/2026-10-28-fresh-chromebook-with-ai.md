@@ -35,5 +35,5 @@ Debian は Python の tkinter を別のパッケージ `python3-tk` に分けて
 - 手順を直した（PR #4）: 付録の手順 3 の apt の行・README（日・英）・7 章に `python3-tk` を足した
 - 検知できるようにした（PR #4）: `doctor` に「モニタの窓」の行を足した。`monitor` も、窓を出せないときは理由を言って止まる
 - `python3-tk` を入れた後は、`doctor`・`monitor`・`record`・`live_csi.py` まで一式が動いた。手順の直しはこれで足りている
-- 太字の警告は、直すかどうかを決める（太字をやめる・警告を抑える）
+- 太字の警告は、太字をやめて直した（`scripts/live_csi.py` のチャンネルの切り替えの印。破線と色で見分けられる）
 - Intel・AMD の Chromebook は、まだ未確認のまま
