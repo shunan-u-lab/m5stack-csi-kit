@@ -1,0 +1,42 @@
+# 2026-10-28 まっさらな Chromebook で、AI と一緒に Linux 開発環境 → ビルド → 書き込み → doctor・monitor・record（ADR 0008 の 4 段目）
+
+## 条件
+
+- PC: Lenovo Chromebook 100e（型番 82W0000FJP）。ARM（`uname -m` は `aarch64`）。買ったままの状態から始めた
+- 手順: 付録 `docs/tutorial/chromebook.md` の手順 1〜7。Claude Code を入れ、GitHub の URL から作業を始めた（作者の設定は無い）
+- AI: 初めに Codex CLI を試したが、利用者が操作に慣れておらず、コマンドラインで想定した動きにできなかったため、Claude Code に切り替えた。
+  以下の結果はすべて Claude Code で進めたもの。Codex で進められるかは未確認
+- キット: `main`（`v0.1.0` の公開後。PR #4 の `python3-tk` の手順は、この試験で見つかって後から足した）
+- 機材: M5Stack Basic 2 台。基板の個体・USB 変換チップ・ポート名は記録していない
+- 記録していないもの: Linux 開発環境の Debian の版、uv・esptool・PlatformIO の版、所要時間、monitor・record の数値（受信レート・ロスなど。「正常に動いた」の報告のみ）
+
+## 結果
+
+| 項目 | 設計値 | 実測値 | 差 | 測り方 |
+|---|---|---|---|---|
+| Linux 開発環境の設定 | 付録の手順どおりに進む | 手順どおりに設定できた | — | 利用者の報告 |
+| モニタの窓（matplotlib の描画先） | 窓を出せる描画先（`tkagg` など） | 初めは `agg`（画面なし）。`python3-tk` を入れて解消 | 手順に `python3-tk` が無かった | 利用者の報告 |
+| ファームウェアのビルド（`pio run`） | 通る | 通った | — | 利用者の報告 |
+| 書き込み | 通る | 通った | — | 利用者の報告 |
+| `doctor`（「モニタの窓」の行を含む） | 全項目 OK | 正常 | — | 利用者の報告 |
+| `monitor`（窓が出るか） | 窓が出る | 正常 | — | 利用者の報告 |
+| `record` | 記録できる | 正常 | — | 利用者の報告 |
+| `scripts/live_csi.py`（多機能のビューア） | 起動する | 起動した | — | 利用者の報告 |
+| 警告 | 出ない | フォントの太字が無い警告が出た（動作には影響なし） | 警告 1 種 | 利用者の報告 |
+
+**`python3-tk` が要った理由:** uv が Linux 開発環境の Debian の Python 3.13（`/usr/bin/python3.13`）を使った。
+Debian は Python の tkinter を別のパッケージ `python3-tk` に分けているため、matplotlib が窓を出す部品を見つけられず、`agg` を選んだ。
+作者の Chromebook には `python3-tk` が入っていたため、これまでの試験では表に出なかった。
+
+**太字の警告:** 作者の Chromebook でも `findfont: Failed to find font weight bold for IPAGothic, now using 400.` として再現した。
+`scripts/live_csi.py` がチャンネルの切り替えの印を太字（`fontweight="bold"`）で描き、日本語のために候補に足した IPA ゴシックに太字が無いため。
+描く文字が英数字（` ch6`）だけでも出る。印が普通の太さで描かれるだけで、表示・記録には影響しない。
+
+## 次にどうするか
+
+- 手順を直した（PR #4）: 付録の手順 3 の apt の行・README（日・英）・7 章に `python3-tk` を足した
+- 検知できるようにした（PR #4）: `doctor` に「モニタの窓」の行を足した。`monitor` も、窓を出せないときは理由を言って止まる
+- `python3-tk` を入れた後は、`doctor`・`monitor`・`record`・`live_csi.py` まで一式が動いた。手順の直しはこれで足りている
+- 太字の警告は、太字をやめて直した（`scripts/live_csi.py` のチャンネルの切り替えの印。破線と色で見分けられる）
+- Intel・AMD の Chromebook は、まだ未確認のまま
+- Codex CLI で進められるかは未確認。初めての人が AI の道具そのものの操作で迷う場合があるので、AI の道具の入れ方・使い始め方を手順に書くかは別に決める
