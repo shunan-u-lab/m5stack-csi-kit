@@ -3,6 +3,9 @@
 # `gh workflow run ci.yml --ref <ブランチ> -f os=linux`）でも動かせる。os は linux（約 5 分）か all（3 OS・約 10 分）
 # （public のリポでは標準の runner が無料なので、2026-10-28 に PR ごとの自動に戻した）。
 # v* のタグでは、書き込み用の .bin を付けた下書きのリリースを作る（公開は人が確かめてから）。
+# PR では、変わったファイルで回すものを絞る（scripts/ci_scope.py。2026-10-28）:
+#   文書だけ → Python のテストを Linux だけ（約 1 分）／Python → 3 OS／ファーム・CI の設定 → ファームのビルドも。
+# main の保護で必須にするのは ci-ok だけ（飛ばしたジョブを成功とみなし、失敗・中止を落とす）。
 # コマンドは AGENTS.md の Commands と揃える。
 name: CI
 
@@ -26,14 +29,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 何が変わったか。PR 以外（タグ・手動）はすべて回す
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      python: ${{ steps.scope.outputs.python }}
+      firmware: ${{ steps.scope.outputs.firmware }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            # 分からなければ（git diff の失敗）空を渡し、ci_scope.py がすべて回す側に倒す
+            files=$(git diff --name-only "$BASE" HEAD || true)
+          else
+            files=""
+          fi
+          echo "$files"
+          echo "$files" | python3 scripts/ci_scope.py | tee -a "$GITHUB_OUTPUT"
+
   python:
+    needs: changes
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        # 手動の linux は Linux だけ、それ以外（PR・タグ・手動の all）は 3 OS
-        os: ${{ fromJSON(inputs.os == 'linux' && '["ubuntu-latest"]' || '["ubuntu-latest", "windows-latest", "macos-latest"]') }}
+        # 手動の linux・文書だけの PR は Linux だけ、それ以外（Python の PR・タグ・手動の all）は 3 OS
+        os: ${{ fromJSON((inputs.os == 'linux' || needs.changes.outputs.python == 'light') && '["ubuntu-latest"]' || '["ubuntu-latest", "windows-latest", "macos-latest"]') }}
         python-version: ["3.13"]
         include:
           # 3.10 は対応の下限（tomli を使う側）
@@ -74,6 +103,8 @@ jobs:
           fi
 
   firmware:
+    needs: changes
+    if: needs.changes.outputs.firmware == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     # Mac（Apple Silicon の runner）でもビルドできる（2026-10-27 の CI で確認）
@@ -110,6 +141,25 @@ jobs:
           name: firmware
           path: out/firmware/
           if-no-files-found: error
+
+  # main の保護で必須にする唯一のジョブ。飛ばしたジョブは成功とみなし、失敗・中止があれば落とす
+  ci-ok:
+    if: always()
+    needs: [changes, python, encoding, firmware]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 失敗・中止したジョブが無いこと
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "changes=$CHANGES results=$RESULTS"
+          # changes が飛んだ・落ちたなら、他が飛んだのは判定できなかったため。成功とみなさない
+          [ "$CHANGES" = "success" ] || exit 1
+          for r in $RESULTS; do
+            case "$r" in success|skipped) ;; *) exit 1 ;; esac
+          done
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
