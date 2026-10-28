@@ -45,6 +45,7 @@ uv tool install esptool        # 書き込みの道具
 
 Windows・Mac では USB ドライバが要ることがあります（M5Stack Basic の USB 変換チップは、新しい版が CH9102、古い版が CP2104）。
 Linux では、シリアルポートを使える集団（Debian・Ubuntu は `dialout`）に入ってからログインし直してください。
+Debian・Ubuntu では、モニタの窓を出す部品も入れてください: `sudo apt install python3-tk`（無いと `csikit monitor` の窓が開きません）。
 **Chromebook** は、Linux 開発環境をオンにし、M5Stack を Linux 側に渡す手順が要ります（[チュートリアルの付録](docs/tutorial/chromebook.md)。ARM の Chromebook で確認）。
 足りないものは次の `doctor` が教えます。
 

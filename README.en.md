@@ -44,6 +44,7 @@ uv tool install esptool        # flashing tool
 
 On Windows and macOS you may need a USB driver (the USB-serial chip of the M5Stack Basic is a CH9102 on newer units and a CP2104 on older ones).
 On Linux, join the group that may use serial ports (`dialout` on Debian/Ubuntu) and log in again.
+On Debian/Ubuntu, also install the GUI toolkit for the monitor window: `sudo apt install python3-tk` (without it, the `csikit monitor` window does not open).
 On a **Chromebook**, turn on the Linux development environment and share the M5Stack with Linux first ([tutorial appendix](docs/tutorial/chromebook.md), Japanese; tested on an ARM Chromebook).
 `doctor` (next step) tells you what is missing.
 
