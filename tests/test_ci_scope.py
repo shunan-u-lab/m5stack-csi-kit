@@ -29,6 +29,7 @@ FULL = {"python": "full", "firmware": "true"}
 @pytest.mark.parametrize(("paths", "expected"), [
     (["docs/tasks/current.md", "README.md", "README.en.md"], LIGHT),
     (["docs/tutorial/images/fig.png", "LICENSE", "DISCLAIMER.en.md"], LIGHT),
+    (["CITATION.cff", "README.md"], LIGHT),
     (["firmware/csi-tx/README.md"], LIGHT),
     (["docs/tasks/current.md", "scripts/live_csi.py"], PYTHON),
     (["src/csikit/doctor.py"], PYTHON),

@@ -6,9 +6,15 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:  # pragma: no cover
+    import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -88,3 +94,12 @@ def test_tutorial_index_lists_three_ways_to_learn() -> None:
     for way in ("一人で読む", "チャット型の AI と読む", "コマンドライン AI と動かす", "AGENTS.md"):
         assert way in text, f"{way} が無い"
     assert len(CHAPTERS) >= 9
+
+
+def test_citation_version_matches_package() -> None:
+    """CITATION.cff の版が pyproject.toml の版と同じ（版を上げたときの直し忘れを防ぐ）."""
+    package = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    cff = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
+    found = re.search(r'^version:\s*"?([^"\s]+)"?\s*$', cff, flags=re.MULTILINE)
+    assert found, "CITATION.cff に version が無い"
+    assert found.group(1) == package["project"]["version"]
