@@ -24,7 +24,8 @@
 - [ ] 作者の設定の無い環境で、AI と一緒に進めて迷わないかを確かめる（ADR 0008 の 4 段目）
       → 2026-10-28 に着手。まっさらな Chromebook に Claude Code を入れ、GitHub の URL から起動できた。
       手順に無かった `python3-tk` が要った（無いと matplotlib が `agg` になり、`monitor` の窓が出ない）→ 手順に足し、`doctor` で検知するようにした（PR #4）。
-      残り: どこまで通ったか（doctor・flash・monitor・record）と機種（ARM か Intel か）を `docs/test-log/` に記録する
+      Lenovo Chromebook 100e（ARM）で、手順どおりの設定・ファームのビルド・書き込みまで通った（[記録](../test-log/2026-10-28-fresh-chromebook-with-ai.md)）。
+      残り: 同じ PC で `doctor`・`monitor`・`record` を通して記録する
 - [ ] public からクローンして、Windows の実機で doctor → flash → monitor → record（`docs/test-log/` に記録）
 - [ ] 同じく Mac の実機で
 - [ ] 機材の貸与元の先生方に確認していただく
