@@ -4,6 +4,8 @@
 
 - PC: Lenovo Chromebook 100e（型番 82W0000FJP）。ARM（`uname -m` は `aarch64`）。買ったままの状態から始めた
 - 手順: 付録 `docs/tutorial/chromebook.md` の手順 1〜7。Claude Code を入れ、GitHub の URL から作業を始めた（作者の設定は無い）
+- AI: 初めに Codex CLI を試したが、利用者が操作に慣れておらず、コマンドラインで想定した動きにできなかったため、Claude Code に切り替えた。
+  以下の結果はすべて Claude Code で進めたもの。Codex で進められるかは未確認
 - キット: `main`（`v0.1.0` の公開後。PR #4 の `python3-tk` の手順は、この試験で見つかって後から足した）
 - 機材: M5Stack Basic 2 台。基板の個体・USB 変換チップ・ポート名は記録していない
 - 記録していないもの: Linux 開発環境の Debian の版、uv・esptool・PlatformIO の版、所要時間、monitor・record の数値（受信レート・ロスなど。「正常に動いた」の報告のみ）
@@ -37,3 +39,4 @@ Debian は Python の tkinter を別のパッケージ `python3-tk` に分けて
 - `python3-tk` を入れた後は、`doctor`・`monitor`・`record`・`live_csi.py` まで一式が動いた。手順の直しはこれで足りている
 - 太字の警告は、太字をやめて直した（`scripts/live_csi.py` のチャンネルの切り替えの印。破線と色で見分けられる）
 - Intel・AMD の Chromebook は、まだ未確認のまま
+- Codex CLI で進められるかは未確認。初めての人が AI の道具そのものの操作で迷う場合があるので、AI の道具の入れ方・使い始め方を手順に書くかは別に決める

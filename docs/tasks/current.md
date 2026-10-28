@@ -24,7 +24,7 @@
 - [x] public に切り替え、`v0.1.0` を公開した（2026-10-28）。直後に認証なしの `git clone` と、リリースの .bin の取得（照合 OK）、`doctor` が通った
 - [x] CI を PR ごとの自動（3 OS・約 10 分）に戻し、`main` を保護した（2026-10-28。消す・強制 push の禁止、PR を必須、CI の 8 ジョブの成功を必須、管理者にも適用）
 - [x] 作者の設定の無い環境で、AI と一緒に進めて迷わないかを確かめる（ADR 0008 の 4 段目）
-      → 2026-10-28。まっさらな Chromebook に Claude Code を入れ、GitHub の URL から起動できた。
+      → 2026-10-28。まっさらな Chromebook に Claude Code を入れ、GitHub の URL から起動できた（初めに試した Codex CLI は操作に慣れず、Claude Code に切り替えた。Codex は未確認）。
       手順に無かった `python3-tk` が要った（無いと matplotlib が `agg` になり、`monitor` の窓が出ない）→ 手順に足し、`doctor` で検知するようにした（PR #4）。
       Lenovo Chromebook 100e（ARM）で、手順どおりの設定・ファームのビルド・書き込み・doctor・monitor・record・`live_csi.py` まで一式が動いた（[記録](../test-log/2026-10-28-fresh-chromebook-with-ai.md)）
 - [ ] public からクローンして、Windows の実機で doctor → flash → monitor → record（`docs/test-log/` に記録）
