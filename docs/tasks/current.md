@@ -4,13 +4,19 @@
 
 ## いま何をしているか
 
-公開した直後。Windows・Mac の実機での確認と、機材の貸与元の先生方による確認を進める。
+公開の準備中（リポはまだ private）。リリースの下書きと実機での確認を済ませてから public に切り替え、
+その後に Windows・Mac の実機での確認と、機材の貸与元の先生方による確認を進める。
 後回しにしているものは [backlog.md](backlog.md)。設計の判断は [docs/decisions/](../decisions/)。
 
 ## 次の一手
 
-- [ ] public からクローンして、Windows の実機で doctor → flash → monitor → record
-      （`docs/test-log/` に記録）
+- [x] CI を手動（`os=linux`）で動かして通した（2026-10-28）
+- [ ] タグ `v0.1.0-rc.1` で CI（3 OS）を通し、下書きのリリース（.bin 2 つ・`SHA256SUMS`）ができるのを確かめる
+- [ ] ゼロからクローンして、実機で doctor → flash → monitor → record（チュートリアルの付録どおり。
+      AI と一緒に進めて迷わないかも見る。ADR 0008）
+- [ ] public に切り替え、リリースを公開する。直後に認証なしの `git clone` で付録の手順をもう一度
+- [ ] public にしたら `main` を保護する（消す・強制 push の禁止、PR を必須、CI の成功を必須）。PR ごとの自動 CI に戻すか決める
+- [ ] public からクローンして、Windows の実機で doctor → flash → monitor → record（`docs/test-log/` に記録）
 - [ ] 同じく Mac の実機で
 - [ ] 機材の貸与元の先生方に確認していただく
 
