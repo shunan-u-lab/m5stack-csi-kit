@@ -67,6 +67,45 @@ def test_identify_flushes_partial_line_first() -> None:
     assert dev.received[:2] == ["", "WHO"]
 
 
+@pytest.mark.parametrize("role", ["rx", "tx"])
+def test_ask_who_resends_after_boot_line(role: str) -> None:
+    """起動中に届いた WHO は消える。起動の行を読んだら送り直す（2026-10-29 の実機の試験）."""
+    dev = FakeDevice(role, R_MAC if role == "rx" else S_MAC, boots=1)
+    port = make_opener({"p0": dev})("p0", dev.baud)
+    board = ports.ask_who(port, "p0", dev.baud, clock=FakeClock())
+    assert board is not None and board.role == role
+    # 起動中の WHO は届かない。送り直しの先頭の改行で、化けた 1 文字は別の行として捨てられる
+    assert dev.received == ["\ufffd", "WHO"]
+
+
+def test_resend_without_newline_would_be_garbled() -> None:
+    """改行で区切らずに送り直すと、化けた 1 文字が頭に付いて答えてもらえない（実機と同じ）."""
+    dev = FakeDevice("rx", R_MAC, boots=1)
+    port = make_opener({"p0": dev})("p0", RX_BAUD)
+    port.readline()  # 開いた直後の途中の行
+    port.readline()  # 起動の行（ここで化けた 1 文字が残る）
+    port.write(b"WHO\n")
+    assert port.readline().startswith(b"# err cmd=\xef\xbf\xbdWHO")
+
+
+def test_identify_finds_rebooting_receiver() -> None:
+    """探している途中で受信機が起動しても、見つける（直す前は「受信機が見つかりません」になった）."""
+    dev = FakeDevice("rx", R_MAC, boots=1)
+    clock = FakeClock()
+    board = ports.identify("p1", opener=make_opener({"p1": dev}), sleep=clock.sleep, clock=clock)
+    assert board is not None and (board.role, board.baud) == ("rx", RX_BAUD)
+
+
+def test_identify_gives_up_when_board_keeps_rebooting() -> None:
+    """再起動を繰り返す基板には、送り直しの上限で止まる（その速さでは見つからない）."""
+    dev = FakeDevice("rx", R_MAC, boots=ports.MAX_WHO_RESENDS + 1)
+    clock = FakeClock()
+    port = make_opener({"p0": dev})("p0", RX_BAUD)
+    assert ports.ask_who(port, "p0", RX_BAUD, clock=clock) is None
+    assert dev.received == []  # どの WHO も起動中に届いて消えた
+    assert dev.boots == 0  # 起動の行は 1 + 上限 の回数だけ読んだ
+
+
 def test_find_boards_reports_silent_and_unopenable_ports() -> None:
     """答えない・開けないポートは理由つきで分ける."""
     infos = [ports.PortInfo(d, "", 0x1A86, 0x55D4) for d in ("p0", "p1", "p2", "gone")]
