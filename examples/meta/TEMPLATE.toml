@@ -18,7 +18,7 @@ name = "T1"
 board = "M5Stack Basic"
 mac = "02:00:00:00:00:01"   # 自分の M5Stack Basic の MAC（csikit doctor が表示する）
 firmware = "csi-tx"
-firmware_rev = "unknown"   # 書き込んだ時点の git 短縮ハッシュ
+firmware_rev = "unknown"   # ファームの版（doctor の fw=。csikit record が自動で入れる。送信機が PC につながっていなければ unknown）
 
 [[devices]]
 role = "rx"

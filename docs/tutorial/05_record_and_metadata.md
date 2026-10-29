@@ -27,6 +27,7 @@ uv run csikit record --duration 30 --label empty
 
 ```
 受信機（R1）: /dev/ttyACM1
+送信機（T1）: /dev/ttyACM0  fw=1028-a74b527（メタデータの下書きに入れます）
 記録中 20 秒 → …/m5stack-csi-kit/data/raw/20261028-093000-kitfw-test.csv
 メタデータの下書き: …/m5stack-csi-kit/data/meta/20261028-093000-kitfw-test.toml（TODO 17 件を埋めてください）
 ok=2008 bad_crc=0 bad_ratio=0.0000 bad_format=0 other=2 span_sec=20.10 rate_hz=99.9 est_missing=6 seq_unknown=0 missing_seq=3
@@ -44,7 +45,9 @@ ok=2008 bad_crc=0 bad_ratio=0.0000 bad_format=0 other=2 span_sec=20.10 rate_hz=9
 | `est_missing` | 受信の時刻の間隔から見積もった欠け（連番が使えないときの目安） | 6 |
 
 - 記録は `data/raw/<日時>-<label>.csv`、条件の下書きは `data/meta/<同じ名前>.toml` にできます。名前に日時が入るので、同じ label で何回取っても上書きされません
-- 記録中は**受信機をリセットしません**。記録の始めに `WHO` を送り、その返事（受信機・送信機の MAC、チャンネル）も記録に残します
+- 記録中は**受信機をリセットしません**。記録の始めに `WHO` を送り、その返事（受信機・送信機の MAC、チャンネル、受信機のファームの版）も記録に残します
+- 送信機も PC につないであれば、送信機のファームの版を記録の 2 行目（`# capture tx_fw=…`）に残します。
+  送信機を電池で離れた所に置いているときは「送信機の版は分かりません」と出て、下書きの送信機の版は `"unknown"` になります（記録はそのまま続きます）
 - `data/` は **git に入りません**（`.gitignore`）。記録には部屋の様子が映りうるので、人に渡すときは 1 章 1-6 と 8 章を読み返します
 - 記録とメタデータには、M5Stack Basic の MAC が入っています。人に渡す・公開するときは、ダミーに置き換えた写しを作って渡します:
   `uv run python scripts/mask_macs.py data/raw/<名前>.csv --out-dir <写しの置き場>`（元のファイルは書き換えません）
@@ -88,7 +91,7 @@ uv run python -c "from csikit import io; print(io.recording_name('data/raw/20261
 |---|---|---|
 | 先頭 | `purpose`（何を確かめる記録か）・`experiment`（実験の呼び名） | `recording`・`label` |
 | `[time]` | — | 始めた時刻・長さ |
-| `[[devices]]` | `name`（`T1`・`R1`）・`board`（`M5Stack Basic`） | 役割・MAC |
+| `[[devices]]` | `name`（`T1`・`R1`）・`board`（`M5Stack Basic`） | 役割・MAC・ファームの版（`firmware_rev`。送信機の版は、送信機を PC につないでいたときだけ） |
 | `[radio]` | `tx_rate_hz`（`100`） | チャンネル・帯域 |
 | `[placement]` | 部屋の呼び名（`room-A` など）・2 台の距離 [m]・間をさえぎる物があるか | — |
 | `[environment]` | 部屋にいた人数・ほかに起きていたこと | — |

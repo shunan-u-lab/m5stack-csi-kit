@@ -148,6 +148,48 @@ def test_draft_ignores_tx_list_when_reading_rx_mac(tmp_path: Path) -> None:
     assert macs == {"tx": "02:00:00:00:00:01", "rx": "02:00:00:00:00:02"}
 
 
+def test_draft_fills_firmware_rev_from_capture(tmp_path: Path) -> None:
+    """受信機の版は起動の行・WHO の応答から、送信機の版は # capture tx_fw= の行から入る."""
+    csv = write_capture(tmp_path / "20261029-120000-walk.csv")
+    draft = meta.draft_from_capture(csv)
+    assert {d["role"]: d["firmware_rev"] for d in draft["devices"]} == {
+        "tx": meta.UNKNOWN, "rx": meta.UNKNOWN}  # 版の無い古い記録は unknown のまま
+
+    lines = csv.read_text(encoding="utf-8").splitlines()
+    lines[1:1] = [meta.tx_fw_line("1028-3b8f078") or ""]
+    lines = [line + " fw=1028-aaaaaaa" if line.startswith("# mac=") else line for line in lines]
+    lines.insert(3, "# tx id=0 mac=020000000001 name=x fw=9999-bbbbbbb")  # 送信機の一覧は見ない
+    csv.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    info = meta.read_capture_info(csv)
+    assert (info.rx_fw, info.tx_fw) == ("1028-aaaaaaa", "1028-3b8f078")
+    assert info.rx_mac == "02:00:00:00:00:02"  # 版の行を受信機の MAC と取り違えない
+    draft = meta.draft_from_capture(csv)
+    assert {d["role"]: d["firmware_rev"] for d in draft["devices"]} == {
+        "tx": "1028-3b8f078", "rx": "1028-aaaaaaa"}
+    assert meta.validate_meta(draft, csv.stem) == []
+
+
+def test_draft_keeps_base_firmware_rev_when_capture_has_none(tmp_path: Path) -> None:
+    """記録に版が無ければ前回の値を残し、あれば記録の値で上書きする（MAC と同じ）."""
+    base = meta.load_meta(EXP01_STATIC)
+    for dev in base["devices"]:
+        dev["firmware_rev"] = "1001-0000000"
+    csv = write_capture(tmp_path / "20261029-120000-walk.csv")
+    lines = csv.read_text(encoding="utf-8").splitlines()
+    lines[1:1] = [meta.tx_fw_line("1028-3b8f078") or ""]
+    csv.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    draft = meta.draft_from_capture(csv, base=base)
+    assert {d["role"]: d["firmware_rev"] for d in draft["devices"]} == {
+        "tx": "1028-3b8f078", "rx": "1001-0000000"}
+
+
+def test_tx_fw_line_rejects_non_version_text() -> None:
+    """記録を壊す文字（空白・改行）や unknown は行にしない."""
+    assert meta.tx_fw_line("1028-3b8f078") == "# capture tx_fw=1028-3b8f078"
+    for bad in ("", "unknown", "1028 x", "a\nb"):
+        assert meta.tx_fw_line(bad) is None, bad
+
+
 def test_draft_without_marks_uses_label_as_activity(tmp_path: Path) -> None:
     """印がなければ全体を 1 区間とし、ラベルが動作名ならそれを使う."""
     csv = write_capture(tmp_path / "20260923-150000-walk.csv")

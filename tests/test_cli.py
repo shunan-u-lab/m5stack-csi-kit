@@ -84,6 +84,21 @@ def test_record_passes_port_and_rest(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "--no-reset" not in seen[0][1]
 
 
+def test_record_passes_tx_fw_when_tx_is_connected(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ポートの指定が無ければ 1 回探し、送信機が見つかればその版を capture_csi に渡す."""
+    seen: list[list[str]] = []
+    monkeypatch.setattr(cli, "run_script", lambda name, argv: seen.append(argv) or 0)
+    patch_boards(monkeypatch, {"p0": FakeDevice("rx", R_MAC),
+                               "p1": FakeDevice("tx", S_MAC, fw="1028-3b8f078")})
+    assert cli.main(["record", "--duration", "1", "--label", "x"]) == 0
+    assert seen[0][4:8] == ["--port", "p0", "--tx-fw", "1028-3b8f078"]
+
+    seen.clear()
+    patch_boards(monkeypatch, {"p0": FakeDevice("rx", R_MAC)})  # 送信機は電池で離れた所
+    assert cli.main(["record", "--duration", "1", "--label", "x"]) == 0
+    assert "--tx-fw" not in seen[0]
+
+
 def test_monitor_rejects_unknown_args(capsys: pytest.CaptureFixture[str]) -> None:
     """Monitor は知らない引数を断る（record と違い、渡す先が無い）."""
     with pytest.raises(SystemExit):
