@@ -188,12 +188,37 @@ If you use this kit in a paper or presentation, state the following so that read
 
 - **Pin the version.** `main` keeps changing, so give the release tag you used (e.g. `v0.1.0`) or the commit hash.
   "Cite this repository" on the repository page (generated from [CITATION.cff](CITATION.cff)) gives BibTeX and APA forms
-- **State the firmware version on the boards.** `fw=` in the output of `uv run csikit doctor` (both the transmitter and the receiver). It may differ from the PC-side version
+- **State the firmware version on the boards.** `fw=` in the output of `uv run csikit doctor` (both the transmitter and the receiver). It may differ from the PC-side version.
+  It is also filled into `firmware_rev` of the metadata draft that `csikit record` writes (the transmitter's version only when the transmitter was connected to the PC while recording)
 - **State the measurement conditions the kit fixes** (or the values you changed):
   - Transmission: one transmitter, every 10 ms (about 100 packets/s), 802.11n MCS0, 20 MHz (HT20)
   - CSI: the 56 HT-LTF subcarriers (indices −28 to +28 excluding 0), one antenna
   - Channel and transmit power (the values set with `csikit channel` / `txpower`, if any; the default power is the ESP32 default of 19.5 dBm)
   - The receiver outputs CSI only from its paired transmitter (other sources are only counted)
+
+### Reading and tracing `fw=`
+
+`fw=` is "build date (month and day)-short hash of git `HEAD` at build time" (e.g. `1028-3b8f078`; see `firmware/shared/fw_version.py`).
+It is made from the date and the commit, not from the source itself, so the same source built on another day or from another commit gives a different string.
+
+| Form | Meaning | Traceable? |
+|---|---|---|
+| `1028-3b8f078` | Built from committed source | Yes, if the commit is in this repository (`main` or a tag) |
+| `1028-3b8f078+` | Built with uncommitted changes under `firmware/` | **No** (the changes are not recorded anywhere) |
+| `1028-nogit` | Built without git (e.g. from an extracted ZIP) | **No** |
+
+How to trace it (in a clone of this repository):
+
+```sh
+git log -1 3b8f078                          # which commit, and its date
+git diff v0.1.0 3b8f078 -- firmware/        # same firmware as the release? (no output = same)
+git show 3b8f078:firmware/csi-rx/src/main.cpp  # the source at that point (git checkout 3b8f078 to rebuild)
+```
+
+- Measure with a version that has neither `+` nor `nogit`. If you change the firmware, commit and rebuild (push the commit if others need to trace it)
+- Commits that exist only in your clone, or PR-branch commits removed after merging, cannot be traced by others. Build from `main` or a tag
+- What `fw=` does not include: build settings (`-D` options such as the boot-time transmit power `CSI_TX_POWER_QDBM` or whether to use the SD card `CSI_SD`).
+  Editing `platformio.ini` adds `+`, but passing them from outside does not. If you changed them, state the values in your paper
 
 Reproducing tutorial figures or text in a paper or slides requires attribution under CC BY 4.0 ([LICENSE-DOCS](LICENSE-DOCS)).
 Using the code alone does not oblige you to cite it under the license, but we recommend doing so for reproducibility.
