@@ -6,7 +6,9 @@
   リセットにつながっていて、「DTR だけ下がり RTS は上がっている」瞬間があると再起動する
   （受信機は時刻の取得を待つ間、最大で約 30 秒黙る）
 - ``identify``: ``WHO`` を送り、応答から役割・MAC・組の状態を読む。送信機は 115200 bps、
-  受信機は 921600 bps なので、両方を順に試す
+  受信機は 921600 bps なので、両方を順に試す。起動中（受信機は約 1.6 秒）に届いた ``WHO`` は
+  答えてもらえない（消えるか、起動中に入った化けた 1 文字が頭に付いて「知らない命令」になる）ので、
+  待つ間に起動の行を読んだら、改行で区切ってから送り直す（docs/test-log/2026-10-29-*）
 
 失敗時の挙動: 開けないポートは OSError。``identify`` は、どの速さでも ``WHO`` に答えなければ
 None を返す（ファーム未書き込み・別の機器・別のアプリがポートを使用中のどれか）。
@@ -32,7 +34,12 @@ RX_BAUD = 921600  # firmware/csi-rx の SERIAL_BAUD [bit/s]
 IDENTIFY_BAUDS = (RX_BAUD, TX_BAUD)
 READ_TIMEOUT_SEC = 0.2  # 1 行を待つ時間 [sec]
 SETTLE_SEC = 0.2  # 開いてから、途中の行を捨てるまで待つ時間 [sec]
-WHO_TIMEOUT_SEC = 1.5  # WHO の応答を待つ時間 [sec]
+WHO_TIMEOUT_SEC = 1.5  # WHO の応答を待つ時間 [sec]（送り直したら、そこから数え直す）
+# 起動の行（受信機・送信機）。読んだら、起動中に届いて答えてもらえなかった WHO を送り直す
+BOOT_LINE_PREFIXES = ("# CSI receiver", "[tx] CSI transmitter")
+# 送り直す命令。先頭の改行で、起動中に入った化けた文字を 1 行として切り離す（無いと「?WHO」になる）
+WHO_RESEND = b"\nWHO\n"
+MAX_WHO_RESENDS = 2  # 送り直す上限 [回]（再起動を繰り返す基板をいつまでも待たない）
 MAC_HEX_LEN = 12  # 区切りなしの MAC の長さ [文字]
 
 _WHO = re.compile(r"^(?:\[tx\]|#) who (?P<body>.*)$")
@@ -186,15 +193,24 @@ def ask_who(port: SerialPort, port_name: str, baud: int,
             clock: Callable[[], float] = time.monotonic) -> Board | None:
     """開いたポートに ``WHO`` を送り、応答を待つ（CSI の行などは読み捨てる）.
 
+    待つ間に起動の行（``BOOT_LINE_PREFIXES``）を読んだら、相手は起動の途中で ``WHO`` を
+    受け取れていないので、改行で区切って送り直し、待ち時間を数え直す（``MAX_WHO_RESENDS`` 回まで）。
+
     Returns:
         応答があれば Board、時間内に無ければ None。
     """
     port.write(b"WHO\n")
     deadline = clock() + timeout_sec
+    resends = 0
     while clock() < deadline:
-        board = parse_who(read_line(port), port_name, baud)
+        line = read_line(port)
+        board = parse_who(line, port_name, baud)
         if board is not None:
             return board
+        if line.startswith(BOOT_LINE_PREFIXES) and resends < MAX_WHO_RESENDS:
+            port.write(WHO_RESEND)
+            resends += 1
+            deadline = clock() + timeout_sec
     return None
 
 

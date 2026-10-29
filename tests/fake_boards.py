@@ -16,6 +16,7 @@ _HEX32 = re.compile(r"^[0-9a-fA-F]{32}$")
 _CH = re.compile(r"^CH (\d+)$")
 _TXPS = re.compile(r"^TXPS (\S+)$")
 TX_POWER_STEP_DBM = 0.25  # 送信出力の段 [dBm]（実物は指定より低い段に丸める）
+BOOT_NOISE = b"\xff"  # 起動の後に受け口に残る化けた 1 文字（2026-10-29 の実機: # err cmd=?WHO）
 
 
 @dataclass
@@ -33,6 +34,9 @@ class FakeDevice:
     channel: int = 11
     tx_power_dbm: float = 19.5  # 受信機なら「送信機の出力」として扱う
     relay_fails: str | None = None  # CH・TXPS で送信機に届かないときの理由（例: tx_no_ack）
+    # 起動の途中の回数（その間に届いた命令は消える。読まれると起動の行を出し、
+    # 受け口に化けた 1 文字を残す）
+    boots: int = 0
     received: list[str] = field(default_factory=list)
 
     @property
@@ -56,6 +60,12 @@ class FakeDevice:
         line = (f"# who role=rx mac={self.mac} channel=11 format=3 tx_mac={self.peer} relay=1 "
                 f"pico=0 auth={auth} tx_power_dbm=19.50 fw={self.fw}")
         return line + (f" paired={int(self.paired)}" if self.has_pair_command else "")
+
+    def boot_line(self) -> str:
+        """起動の行（実物の先頭の部分だけ）."""
+        if self.role == "tx":
+            return "[tx] CSI transmitter v4 commands=CH,WHO,TXP,WDTTEST,REBOOT,PAIRSET,PAIRCLEAR"
+        return "# CSI receiver format=3"
 
     def handle(self, line: str) -> list[str]:
         """1 行の命令に応答する."""
@@ -116,16 +126,23 @@ class FakePort:
         self.buf += data
         while b"\n" in self.buf:
             raw, self.buf = self.buf.split(b"\n", 1)
-            if self.device is None:
+            if self.device is None or self.device.boots > 0:  # 起動中に届いた命令は消える
                 continue
-            for reply in self.device.handle(raw.decode()):
+            for reply in self.device.handle(raw.decode(errors="replace")):
                 self.out.append(reply.encode() + b"\n" if self.baud == self.device.baud
                                 else b"\xff\xfe garbage\n")
         return len(data)
 
     def readline(self) -> bytes:
-        """1 行を返す（無ければ空）."""
-        return self.out.popleft() if self.out else b""
+        """1 行を返す（無ければ空。起動の途中なら、起動を 1 回終えて起動の行を返す）."""
+        if self.out:
+            return self.out.popleft()
+        if self.device is not None and self.device.boots > 0:
+            self.device.boots -= 1
+            self.buf = BOOT_NOISE  # 実物: 起動中に受け口へ入った 1 文字が、次の命令の頭に付く
+            line = self.device.boot_line()
+            return line.encode() + b"\n" if self.baud == self.device.baud else b"\xff\xfe\n"
+        return b""
 
     def reset_input_buffer(self) -> None:
         """届いていた行を捨てる."""
