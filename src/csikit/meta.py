@@ -6,8 +6,9 @@
 - ``validate_meta``: 形の誤り（必須項目の欠け・型・範囲・ファイル名との食い違い）を列挙する
 - ``find_todos``: 未記入（``"TODO"``）の項目を列挙する。``"unknown"`` は「分からない」と
   書いた値なので数えない
-- ``draft_from_capture``: 記録ファイルから自動で分かる項目（時刻・MAC・チャンネル・品質・印）を
-  埋めた下書きを作る。人が書く項目は ``"TODO"`` にする（``base`` を渡せば前回の値を写す）
+- ``draft_from_capture``: 記録ファイルから自動で分かる項目（時刻・MAC・ファームの版・チャンネル・
+  品質・印）を埋めた下書きを作る。人が書く項目は ``"TODO"`` にする
+  （``base`` を渡せば前回の値を写す）
 - ``check_dirs``: ``data/raw`` の CSV にメタデータが揃っているかを点検する
 """
 
@@ -52,6 +53,11 @@ TX_LIST_PREFIX = "# tx "  # format=3 の送信機の一覧（# tx id=N mac=…�
 TX_MAC_PATTERN = re.compile(r"\btx_mac=([0-9a-f]{12})\b")
 CHANNEL_PATTERN = re.compile(r"\bchannel=(\d+)\b")
 KEY_VALUE_PATTERN = re.compile(r"(\w+)=(\S+)")
+FW_TEXT_PATTERN = re.compile(r"[0-9A-Za-z._-]+")  # ファームの版の文字（例: 1028-3b8f078）
+RX_FW_PATTERN = re.compile(r"\bfw=([0-9A-Za-z._-]+)")  # 受信機の起動の行・WHO の応答にある版
+# 記録を始めるときに見つけた送信機の版（csikit record が書く）。
+# MAC は入れない（受信機の MAC と取り違えないように）
+TX_FW_PREFIX = "# capture tx_fw="
 
 Meta = dict[str, Any]
 
@@ -351,6 +357,7 @@ class CaptureInfo:
         rssi_mean_dbm: RSSI の平均 [dBm]。
         summary: ``# summary`` 行の key=value。
         marks: 印の (ラベル, 先頭パケットからの時刻 [sec]) の一覧（記録順）。
+        rx_fw / tx_fw: 受信機・送信機のファームの版（記録にない場合は ``"unknown"``）。
     """
 
     start: str
@@ -362,6 +369,22 @@ class CaptureInfo:
     rssi_mean_dbm: float
     summary: dict[str, str]
     marks: list[tuple[str, float]] = field(default_factory=list)
+    rx_fw: str = UNKNOWN
+    tx_fw: str = UNKNOWN
+
+
+def tx_fw_line(fw: str) -> str | None:
+    """記録に残す送信機の版の行（``# capture tx_fw=…``）.
+
+    Args:
+        fw: 送信機の ``WHO`` の ``fw=`` の値。
+
+    Returns:
+        行（改行なし）。版の形でない（空・空白を含むなど）か ``"unknown"`` なら None。
+    """
+    if fw == UNKNOWN or not FW_TEXT_PATTERN.fullmatch(fw):
+        return None
+    return f"{TX_FW_PREFIX}{fw}"
 
 
 def _colon_mac(hex12: str) -> str:
@@ -449,6 +472,7 @@ def read_capture_info(csv_path: str | Path) -> CaptureInfo:
     if not csv_path.exists():
         raise FileNotFoundError(f"CSI ファイルが見つかりません: {csv_path}")
     start, rx_mac, tx_mac, channel = TODO, None, None, None
+    rx_fw, tx_fw = UNKNOWN, UNKNOWN
     summary: dict[str, str] = {}
     raw_marks: list[tuple[str, int]] = []  # (ラベル, 全部の行の先頭からの経過 [µs]。-1 = 時刻なし)
     primary: str | None = None
@@ -473,6 +497,9 @@ def read_capture_info(csv_path: str | Path) -> CaptureInfo:
             if m := CAPTURE_START_PATTERN.match(line):
                 naive_or_aware = datetime.fromisoformat(m.group(1))
                 start = naive_or_aware.astimezone().isoformat(timespec="seconds")
+            elif line.startswith(TX_FW_PREFIX):
+                value = line[len(TX_FW_PREFIX):].strip()
+                tx_fw = value if FW_TEXT_PATTERN.fullmatch(value) else UNKNOWN
             elif line.startswith("# summary"):
                 summary = dict(KEY_VALUE_PATTERN.findall(line))
             elif line.startswith("# mark"):
@@ -483,6 +510,8 @@ def read_capture_info(csv_path: str | Path) -> CaptureInfo:
             else:
                 if not line.startswith(TX_LIST_PREFIX) and (m := RX_MAC_PATTERN.search(line)):
                     rx_mac = _colon_mac(m.group(1))
+                    if fw := RX_FW_PATTERN.search(line):
+                        rx_fw = fw.group(1)
                 if m := TX_MAC_PATTERN.search(line):
                     tx_mac = _colon_mac(m.group(1))
                 if (m := CHANNEL_PATTERN.search(line)) and "mac=" in line:
@@ -504,7 +533,7 @@ def read_capture_info(csv_path: str | Path) -> CaptureInfo:
         start=start, rx_mac=rx_mac, tx_mac=tx_mac, channel=channel, mcs=first.mcs,
         duration_sec=round(stats.elapsed_us / 1e6, TIME_DECIMALS),
         rssi_mean_dbm=round(stats.rssi_sum_dbm / stats.n_packets, RSSI_DECIMALS),
-        summary=summary, marks=marks,
+        summary=summary, marks=marks, rx_fw=rx_fw, tx_fw=tx_fw,
     )
 
 
@@ -543,9 +572,10 @@ def draft_from_capture(csv_path: str | Path, experiment: str = TODO,
                        base: Meta | None = None) -> Meta:
     """記録ファイルから、メタデータの下書きを作る.
 
-    自動で分かる項目（開始時刻・記録時間・MAC・チャンネル・MCS・品質・印）を埋め、
+    自動で分かる項目（開始時刻・記録時間・MAC・ファームの版・チャンネル・MCS・品質・印）を埋め、
     人が書く項目は ``"TODO"`` にする。``base`` を渡すと ``BASE_SECTIONS`` の表を写す
-    （MAC とチャンネルは記録の値で上書きし、MAC が違う機器の名前は ``"TODO"`` に戻す）。
+    （MAC・ファームの版・チャンネルは記録から分かれば記録の値で上書きし、MAC が違う機器の名前は
+    ``"TODO"`` に戻す）。
 
     Args:
         csv_path: 記録ファイル（名前は ``<記録名>.csv``）。
@@ -562,6 +592,7 @@ def draft_from_capture(csv_path: str | Path, experiment: str = TODO,
     base = copy.deepcopy(base) if base else {}
 
     macs = {"tx": info.tx_mac, "rx": info.rx_mac}
+    fws = {"tx": info.tx_fw, "rx": info.rx_fw}
     devices = base.get("devices") or [
         {"role": role, "name": TODO, "board": TODO, "mac": TODO,
          "firmware": FIRMWARE_BY_ROLE[role], "firmware_rev": UNKNOWN} for role in ROLES]
@@ -571,6 +602,9 @@ def draft_from_capture(csv_path: str | Path, experiment: str = TODO,
             if dev.get("mac") not in (mac, TODO):
                 dev["name"] = TODO  # 前回と違う M5Stack Basic。名前を確かめ直す
             dev["mac"] = mac
+        fw = fws.get(str(dev.get("role")), UNKNOWN)
+        if fw != UNKNOWN:
+            dev["firmware_rev"] = fw
 
     radio = base.get("radio") or {"channel": TODO, "bandwidth": "HT20", "mcs": TODO,
                                   "tx_rate_hz": TODO}

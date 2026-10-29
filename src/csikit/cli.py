@@ -25,7 +25,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from csikit import control, doctor, flash, pairing, ports
+from csikit import control, doctor, flash, meta, pairing, ports
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
 
@@ -41,6 +41,15 @@ def find_role(role: str) -> ports.Board:
         CliError: 見つからない・2 台以上ある。
     """
     boards, silent = ports.find_boards(ports.list_ports())
+    return require_role(boards, silent, role)
+
+
+def require_role(boards: Sequence[ports.Board], silent: dict[str, str], role: str) -> ports.Board:
+    """見つけた M5Stack Basic から、役割（tx/rx）の 1 台を選ぶ.
+
+    Raises:
+        CliError: 見つからない・2 台以上ある。
+    """
     board = ports.pick_role(boards, role)
     if board is None:
         n = sum(b.role == role for b in boards)
@@ -233,9 +242,33 @@ def cmd_monitor(args: argparse.Namespace) -> int:
         raise CliError(str(e)) from e
 
 
+def record_targets(args: argparse.Namespace) -> tuple[str, str | None]:
+    """記録する受信機のポートと、見つかれば送信機のファームの版.
+
+    ポートの指定が無ければ 1 回探して両方を見る。送信機が PC につながっていない・
+    ポートを指定したときは、送信機の版は None（下書きでは ``unknown`` のまま）。
+    """
+    if args.port:
+        print(f"受信機（R1）: {args.port}", file=sys.stderr)
+        return args.port, None
+    boards, silent = ports.find_boards(ports.list_ports())
+    rx = require_role(boards, silent, "rx")
+    print(f"受信機（R1）: {rx.port}", file=sys.stderr)
+    tx = ports.pick_role(boards, "tx")
+    if tx is None or tx.fw == meta.UNKNOWN:
+        print("送信機の版は分かりません（PC につながっていない）。下書きでは unknown になります",
+              file=sys.stderr)
+        return rx.port, None
+    print(f"送信機（T1）: {tx.port}  fw={tx.fw}（メタデータの下書きに入れます）", file=sys.stderr)
+    return rx.port, tx.fw
+
+
 def cmd_record(args: argparse.Namespace) -> int:
     """記録（既定はリセットしない）."""
-    extra = ["--duration", str(args.duration), "--label", args.label, "--port", rx_port(args)]
+    port, tx_fw = record_targets(args)
+    extra = ["--duration", str(args.duration), "--label", args.label, "--port", port]
+    if tx_fw is not None:
+        extra += ["--tx-fw", tx_fw]
     if not args.reset:
         extra.append("--no-reset")
     return run_script("capture_csi", [*extra, *args.rest])

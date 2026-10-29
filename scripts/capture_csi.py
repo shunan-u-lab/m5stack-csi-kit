@@ -283,7 +283,8 @@ def open_for_capture(port: str, baud: int, reset: bool) -> Any:
 
 
 def capture(port: str, baud: int, duration_sec: float, path: Path, reset: bool,
-            opener: Callable[[str, int, bool], Any] = open_for_capture) -> CaptureStats:
+            opener: Callable[[str, int, bool], Any] = open_for_capture,
+            tx_fw: str | None = None) -> CaptureStats:
     """シリアルを読み、``path`` に記録する.
 
     Args:
@@ -294,6 +295,8 @@ def capture(port: str, baud: int, duration_sec: float, path: Path, reset: bool,
         reset: 開始時に受信機をリセットするか（起動時の設定行も記録に残る）。
             しないときは WHO の応答を記録に残す。
         opener: ポートを開く関数（テスト用）。
+        tx_fw: 送信機のファームの版。渡せば ``# capture tx_fw=…`` の行を記録に残す
+            （メタデータの下書きが読む。受信機は送信機の版を知らないため）。
 
     Returns:
         集計。
@@ -308,6 +311,8 @@ def capture(port: str, baud: int, duration_sec: float, path: Path, reset: bool,
           path.open("w", encoding="utf-8") as out):
         out.write(f"# capture start={datetime.now().isoformat(timespec='seconds')} "
                   f"port={port} baud={baud} duration_sec={duration_sec} reset={reset}\n")
+        if tx_fw is not None and (fw_line := meta.tx_fw_line(tx_fw)) is not None:
+            out.write(fw_line + "\n")
         if reset:
             reset_receiver(ser)
         started = time.monotonic()
@@ -419,6 +424,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-reset", action="store_true", help="受信機をリセットしない")
     parser.add_argument("--start-delay", type=float, default=0.0,
                         help="記録を始める前に待つ時間 [sec]（部屋を出る間の動きを入れない）")
+    parser.add_argument("--tx-fw",
+                        help="送信機のファームの版（csikit record が WHO で調べて渡す）")
     add_meta_arguments(parser)
     args = parser.parse_args(argv)
 
@@ -427,6 +434,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.start_delay < 0:
         print(f"--start-delay は 0 以上: {args.start_delay}", file=sys.stderr)
+        return 1
+    if args.tx_fw is not None and meta.tx_fw_line(args.tx_fw) is None:
+        print(f"--tx-fw が版の形ではありません: {args.tx_fw!r}", file=sys.stderr)
         return 1
     if ports.port_missing(args.port):
         print(f"ポートがありません: {args.port}（USB の共有を確認）", file=sys.stderr)
@@ -447,7 +457,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"記録中 {args.duration:.0f} 秒 → {path}", file=sys.stderr)
     try:
-        stats = capture(args.port, args.baud, args.duration, path, reset=not args.no_reset)
+        stats = capture(args.port, args.baud, args.duration, path, reset=not args.no_reset,
+                        tx_fw=args.tx_fw)
     except TimeoutError as e:
         path.unlink(missing_ok=True)
         print(e, file=sys.stderr)

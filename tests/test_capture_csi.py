@@ -306,6 +306,24 @@ def test_no_reset_capture_records_who_for_metadata(tmp_path: Path,
     info = meta.read_capture_info(path)
     assert (info.rx_mac, info.tx_mac, info.channel) == ("02:00:00:00:00:02",
                                                         "02:00:00:00:00:01", 11)
+    assert (info.rx_fw, info.tx_fw) == ("1027-abcdef0", meta.UNKNOWN)
+
+
+def test_capture_records_tx_fw(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """送信機の版を渡せば、記録の先頭に残し、下書きが読める."""
+    from csikit import meta
+
+    monkeypatch.setattr(cap.ports, "open_no_reset", lambda port, baud: FakeRx())
+    monkeypatch.setattr(cap.ports.time, "sleep", lambda sec: None)
+    path = tmp_path / "20260101-120000-empty.csv"
+    cap.capture("COM4", 921600, 0.2, path, reset=False, tx_fw="1028-3b8f078")
+    assert path.read_text(encoding="utf-8").splitlines()[1] == "# capture tx_fw=1028-3b8f078"
+    assert meta.read_capture_info(path).tx_fw == "1028-3b8f078"
+
+
+def test_main_rejects_bad_tx_fw() -> None:
+    """版の形でない --tx-fw は、記録の前に断る."""
+    assert cap.main(["--duration", "1", "--label", "x", "--tx-fw", "a b"]) == 1
 
 
 def test_reset_capture_opens_normally(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
